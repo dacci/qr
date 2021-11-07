@@ -24,14 +24,6 @@ macro_rules! cli_error {
 }
 
 fn main() {
-    let r = main_impl();
-    if r.is_err() {
-        eprintln!("error: {}", r.unwrap_err());
-        exit(1)
-    }
-}
-
-fn main_impl() -> Result<(), Box<dyn Error>> {
     let cli_def = load_yaml!("cli.yaml");
     let matches = App::from_yaml(cli_def)
         .name(env!("CARGO_BIN_NAME"))
@@ -39,6 +31,14 @@ fn main_impl() -> Result<(), Box<dyn Error>> {
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .get_matches();
 
+    let r = main_impl(matches);
+    if r.is_err() {
+        eprintln!("error: {}", r.unwrap_err());
+        exit(1)
+    }
+}
+
+fn main_impl(matches: ArgMatches) -> Result<(), Box<dyn Error>> {
     match matches.subcommand() {
         ("decode", Some(sub_m)) => decode(sub_m)?,
         ("encode", Some(sub_m)) => encode(sub_m)?,
