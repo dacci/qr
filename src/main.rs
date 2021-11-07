@@ -2,25 +2,38 @@ use clap::{load_yaml, App, ArgMatches};
 use encoding_rs::Encoding;
 use qrcode::{render::unicode::Dense1x2, EcLevel, QrCode, Version};
 use rqrr::PreparedImage;
-use std::error::Error;
-use std::fmt::{Display, Error as FmtError, Formatter};
 use std::process::exit;
 
-#[derive(Debug)]
-struct CliError(String);
+enum CliError {
+    Usage(String),
+    Image(String),
+    QrCode(String),
+}
 
-impl Display for CliError {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
-        f.write_str(&self.0)
+type Result<T> = std::result::Result<T, CliError>;
+
+macro_rules! usage_error {
+    ($($arg:tt)*) => {
+        CliError::Usage(format!($($arg)*))
+    };
+}
+
+impl From<image::ImageError> for CliError {
+    fn from(e: image::ImageError) -> Self {
+        Self::Image(format!("{}", e))
     }
 }
 
-impl Error for CliError {}
+impl From<rqrr::DeQRError> for CliError {
+    fn from(e: rqrr::DeQRError) -> Self {
+        Self::QrCode(format!("{}", e))
+    }
+}
 
-macro_rules! cli_error {
-    ($($arg:tt)*) => {
-        Box::new(CliError(format!($($arg)*)))
-    };
+impl From<qrcode::types::QrError> for CliError {
+    fn from(e: qrcode::types::QrError) -> Self {
+        Self::QrCode(format!("{}", e))
+    }
 }
 
 fn main() {
@@ -31,28 +44,30 @@ fn main() {
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .get_matches();
 
-    let r = main_impl(matches);
-    if r.is_err() {
-        eprintln!("error: {}", r.unwrap_err());
-        exit(1)
+    if let Err(e) = main_impl(matches) {
+        let (msg, code) = match e {
+            CliError::Usage(msg) => (msg, 1),
+            CliError::Image(msg) => (msg, 2),
+            CliError::QrCode(msg) => (msg, 3),
+        };
+        eprintln!("error: {}", msg);
+        exit(code);
     }
 }
 
-fn main_impl(matches: ArgMatches) -> Result<(), Box<dyn Error>> {
+fn main_impl(matches: ArgMatches) -> Result<()> {
     match matches.subcommand() {
-        ("decode", Some(sub_m)) => decode(sub_m)?,
-        ("encode", Some(sub_m)) => encode(sub_m)?,
-        _ => panic!(),
-    };
-
-    Ok(())
+        ("decode", Some(sub_m)) => decode(sub_m),
+        ("encode", Some(sub_m)) => encode(sub_m),
+        _ => todo!(),
+    }
 }
 
-fn decode(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
+fn decode(matches: &ArgMatches) -> Result<()> {
     let encoding = match matches.value_of("encoding") {
         Some(label) => match Encoding::for_label(label.as_bytes()) {
             Some(encoding) => encoding,
-            None => return Err(cli_error!("unsupported encoding: {}", label)),
+            None => return Err(usage_error!("unsupported encoding: {}", label)),
         },
         None => encoding_rs::UTF_8,
     };
@@ -79,12 +94,15 @@ fn decode(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn encode(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
+fn encode(matches: &ArgMatches) -> Result<()> {
     let version = match matches.value_of("version") {
-        Some(version) => match version.parse()? {
-            version @ 1..=4 if matches.is_present("micro") => Some(Version::Micro(version)),
-            version @ 1..=40 => Some(Version::Normal(version)),
-            version => return Err(cli_error!("unsupported version: {}", version)),
+        Some(version) => match version.parse() {
+            Ok(version) => match version {
+                version @ 1..=4 if matches.is_present("micro") => Some(Version::Micro(version)),
+                version @ 1..=40 => Some(Version::Normal(version)),
+                version => return Err(usage_error!("unsupported version: {}", version)),
+            },
+            Err(_) => return Err(usage_error!("illegal version: {}", version)),
         },
         None => None,
     };
@@ -94,7 +112,7 @@ fn encode(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
         Some("M") => EcLevel::M,
         Some("Q") => EcLevel::Q,
         Some("H") => EcLevel::H,
-        Some(level) => return Err(cli_error!("illegal level: {}", level)),
+        Some(level) => return Err(usage_error!("illegal level: {}", level)),
     };
 
     let data = matches.value_of("data").unwrap();
