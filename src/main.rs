@@ -1,9 +1,7 @@
 use clap::Parser;
 use encoding_rs::Encoding;
 use qrcode::{render::unicode::Dense1x2, QrCode, Version};
-use rqrr::PreparedImage;
 use std::fmt;
-use std::process::exit;
 
 #[derive(Debug)]
 enum CliError {
@@ -35,19 +33,19 @@ macro_rules! usage_error {
 
 impl From<image::ImageError> for CliError {
     fn from(e: image::ImageError) -> Self {
-        Self::Image(format!("{}", e))
+        Self::Image(format!("{e}"))
     }
 }
 
 impl From<rqrr::DeQRError> for CliError {
     fn from(e: rqrr::DeQRError) -> Self {
-        Self::QrCode(format!("{}", e))
+        Self::QrCode(format!("{e}"))
     }
 }
 
 impl From<qrcode::types::QrError> for CliError {
     fn from(e: qrcode::types::QrError) -> Self {
-        Self::QrCode(format!("{}", e))
+        Self::QrCode(format!("{e}"))
     }
 }
 
@@ -118,8 +116,8 @@ fn main() {
             CliError::Image(msg) => (msg, 2),
             CliError::QrCode(msg) => (msg, 3),
         };
-        eprintln!("error: {}", msg);
-        exit(code);
+        eprintln!("error: {msg}");
+        std::process::exit(code);
     }
 }
 
@@ -130,10 +128,10 @@ fn decode(opts: DecodeOpts) -> Result<()> {
     };
 
     let img = image::open(&opts.image)?.to_luma8();
-    let mut img = PreparedImage::prepare(img);
+    let mut img = rqrr::PreparedImage::prepare(img);
 
     for grid in img.detect_grids() {
-        let mut content = Vec::new();
+        let mut content = vec![];
         let meta = grid.decode_to(&mut content)?;
 
         let (content, _, has_error) = encoding.decode(content.as_slice());
@@ -144,7 +142,7 @@ fn decode(opts: DecodeOpts) -> Result<()> {
         println!("# Version: {}", meta.version.to_size());
         println!("# ECC Level: {}", meta.ecc_level);
         println!("# Mask: {}", meta.mask);
-        println!("{}", content);
+        println!("{content}");
     }
 
     Ok(())
@@ -153,9 +151,9 @@ fn decode(opts: DecodeOpts) -> Result<()> {
 fn encode(opts: EncodeOpts) -> Result<()> {
     let version = match opts.version {
         Some(version) => match version {
-            version @ 1..=4 if opts.micro => Some(Version::Micro(version)),
-            version @ 1..=40 => Some(Version::Normal(version)),
-            version => return Err(usage_error!("unsupported version: {}", version)),
+            1..=4 if opts.micro => Some(Version::Micro(version)),
+            1..=40 => Some(Version::Normal(version)),
+            _ => return Err(usage_error!("unsupported version: {version}")),
         },
         None => None,
     };
@@ -170,7 +168,7 @@ fn encode(opts: EncodeOpts) -> Result<()> {
         .dark_color(Dense1x2::Light)
         .light_color(Dense1x2::Dark)
         .build();
-    println!("{}", image);
+    println!("{image}");
 
     Ok(())
 }
