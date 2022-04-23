@@ -8,7 +8,7 @@ description = "QR Code decoder / encoder"
 
 [dependencies]
 clap = { version = "2.33.3", features = ["yaml"] }
-encoding_rs = "0.8.28"
-image = "0.23.14"
+encoding_rs = "0.8.31"
+image = "0.24.1"
 qrcode = "0.12.0"
-rqrr = "0.3.2"
+rqrr = "0.5.1"
