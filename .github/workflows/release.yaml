@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
@@ -21,14 +21,12 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: x86_64-pc-windows-gnu
-          override: true
+          target: x86_64-pc-windows-msvc
+          default: true
       - uses: actions-rs/cargo@v1
         with:
-          use-cross: true
           command: build
-          args: --release --target x86_64-pc-windows-gnu
+          args: --release
       - uses: softprops/action-gh-release@v1
         with:
-          files: target/x86_64-pc-windows-gnu/release/qr.exe
-          prerelease: true
+          files: target/release/qr.exe
