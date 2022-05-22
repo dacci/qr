@@ -2,50 +2,63 @@ use clap::Parser;
 use encoding_rs::Encoding;
 use qrcode::{render::unicode::Dense1x2, QrCode, Version};
 use std::fmt;
+use std::process::{ExitCode, Termination};
 
 #[derive(Debug)]
-enum CliError {
-    Usage(String),
-    Image(String),
-    QrCode(String),
+enum Error {
+    Failure(String),
+    Image(image::ImageError),
+    Decode(rqrr::DeQRError),
+    Encode(qrcode::types::QrError),
 }
 
-impl fmt::Display for CliError {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            CliError::Usage(s) => s,
-            CliError::Image(s) => s,
-            CliError::QrCode(s) => s,
-        };
-        f.write_str(s)
+        match self {
+            Error::Failure(msg) => f.write_str(msg),
+            Error::Image(cause) => write!(f, "{cause}"),
+            Error::Decode(cause) => write!(f, "{cause}"),
+            Error::Encode(cause) => write!(f, "{cause}"),
+        }
     }
 }
 
-impl std::error::Error for CliError {}
+impl std::error::Error for Error {}
 
-type Result<T> = std::result::Result<T, CliError>;
-
-macro_rules! usage_error {
-    ($($arg:tt)*) => {
-        CliError::Usage(format!($($arg)*))
-    };
-}
-
-impl From<image::ImageError> for CliError {
-    fn from(e: image::ImageError) -> Self {
-        Self::Image(format!("{e}"))
+impl Termination for Error {
+    fn report(self) -> ExitCode {
+        match self {
+            Error::Failure(_) => ExitCode::FAILURE,
+            Error::Image(_) => 2.into(),
+            Error::Decode(_) => 3.into(),
+            Error::Encode(_) => 4.into(),
+        }
     }
 }
 
-impl From<rqrr::DeQRError> for CliError {
-    fn from(e: rqrr::DeQRError) -> Self {
-        Self::QrCode(format!("{e}"))
+type Result<T, E = Error> = std::result::Result<T, E>;
+
+impl From<String> for Error {
+    fn from(msg: String) -> Self {
+        Self::Failure(msg)
     }
 }
 
-impl From<qrcode::types::QrError> for CliError {
-    fn from(e: qrcode::types::QrError) -> Self {
-        Self::QrCode(format!("{e}"))
+impl From<image::ImageError> for Error {
+    fn from(cause: image::ImageError) -> Self {
+        Self::Image(cause)
+    }
+}
+
+impl From<rqrr::DeQRError> for Error {
+    fn from(cause: rqrr::DeQRError) -> Self {
+        Self::Decode(cause)
+    }
+}
+
+impl From<qrcode::types::QrError> for Error {
+    fn from(cause: qrcode::types::QrError) -> Self {
+        Self::Encode(cause)
     }
 }
 
@@ -59,7 +72,7 @@ enum Command {
     Encode(EncodeArgs),
 }
 
-fn main() {
+fn main() -> ExitCode {
     let command = Command::parse();
     let res = match command {
         Command::Decode(args) => decode(args),
@@ -67,13 +80,10 @@ fn main() {
     };
 
     if let Err(e) = res {
-        let (msg, code) = match e {
-            CliError::Usage(msg) => (msg, 1),
-            CliError::Image(msg) => (msg, 2),
-            CliError::QrCode(msg) => (msg, 3),
-        };
-        eprintln!("error: {msg}");
-        std::process::exit(code);
+        eprintln!("Error: {e}");
+        e.report()
+    } else {
+        ExitCode::SUCCESS
     }
 }
 
@@ -90,7 +100,7 @@ struct DecodeArgs {
 fn decode(args: DecodeArgs) -> Result<()> {
     let encoding = match Encoding::for_label(args.encoding.as_bytes()) {
         Some(encoding) => encoding,
-        None => return Err(usage_error!("unsupported encoding: {}", args.encoding)),
+        None => return Err(format!("Unsupported encoding: {}", args.encoding).into()),
     };
 
     let img = image::open(&args.image)?.to_luma8();
@@ -117,15 +127,15 @@ fn decode(args: DecodeArgs) -> Result<()> {
 struct EcLevel(qrcode::EcLevel);
 
 impl std::str::FromStr for EcLevel {
-    type Err = CliError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(match s {
             "L" => qrcode::EcLevel::L,
             "M" => qrcode::EcLevel::M,
             "Q" => qrcode::EcLevel::Q,
             "H" => qrcode::EcLevel::H,
-            _ => return Err(usage_error!("illegal level: {s}")),
+            _ => return Err(format!("Illegal level: {s}").into()),
         }))
     }
 }
@@ -153,7 +163,7 @@ fn encode(args: EncodeArgs) -> Result<()> {
         Some(version) => match version {
             1..=4 if args.micro => Some(Version::Micro(version)),
             1..=40 => Some(Version::Normal(version)),
-            _ => return Err(usage_error!("unsupported version: {version}")),
+            _ => return Err(format!("Unsupported version: {version}").into()),
         },
         None => None,
     };
