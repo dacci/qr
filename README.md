@@ -4,7 +4,7 @@
 
 ```console
 $ qr --help
-qr 0.2.0
+qr 0.3.0
 QR Code decoder / encoder
 
 USAGE:
