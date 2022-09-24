@@ -4,7 +4,7 @@
 
 ```console
 $ qr --help
-qr 0.3.0
+qr 0.4.0
 QR Code decoder / encoder
 
 USAGE:
@@ -42,12 +42,13 @@ qr-encode
 Encodes QR Code from a string
 
 USAGE:
-    qr encode [OPTIONS] <DATA>
+    qr encode [OPTIONS] [DATA]
 
 ARGS:
     <DATA>    Data to be encoded
 
 OPTIONS:
+    -f, --file <FILE>          Path to a file contains data to be encoded
     -h, --help                 Print help information
     -l, --level <LEVEL>        The error correction level. (L/M/Q/H) [default: L]
     -m, --micro                Generates Micro QR Code. (requires --version)
