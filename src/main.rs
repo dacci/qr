@@ -2,6 +2,8 @@ use clap::Parser;
 use encoding_rs::Encoding;
 use qrcode::{render::unicode::Dense1x2, QrCode, Version};
 use std::fmt;
+use std::fs::File;
+use std::io::Read;
 use std::process::{ExitCode, Termination};
 
 #[derive(Debug)]
@@ -9,6 +11,7 @@ enum Error {
     Failure(String),
     Image(image::ImageError),
     Decode(rqrr::DeQRError),
+    Io(std::io::Error),
     Encode(qrcode::types::QrError),
 }
 
@@ -18,6 +21,7 @@ impl fmt::Display for Error {
             Error::Failure(msg) => f.write_str(msg),
             Error::Image(cause) => write!(f, "{cause}"),
             Error::Decode(cause) => write!(f, "{cause}"),
+            Error::Io(cause) => write!(f, "{cause}"),
             Error::Encode(cause) => write!(f, "{cause}"),
         }
     }
@@ -31,7 +35,8 @@ impl Termination for Error {
             Error::Failure(_) => ExitCode::FAILURE,
             Error::Image(_) => 2.into(),
             Error::Decode(_) => 3.into(),
-            Error::Encode(_) => 4.into(),
+            Error::Io(_) => 4.into(),
+            Error::Encode(_) => 5.into(),
         }
     }
 }
@@ -53,6 +58,12 @@ impl From<image::ImageError> for Error {
 impl From<rqrr::DeQRError> for Error {
     fn from(cause: rqrr::DeQRError) -> Self {
         Self::Decode(cause)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(cause: std::io::Error) -> Self {
+        Self::Io(cause)
     }
 }
 
@@ -154,8 +165,13 @@ struct EncodeArgs {
     #[clap(short, long, default_value = "L")]
     level: EcLevel,
 
+    /// Path to a file contains data to be encoded.
+    #[clap(short, long, required_unless_present = "data")]
+    file: Option<String>,
+
     /// Data to be encoded.
-    data: String,
+    #[clap(required_unless_present = "file")]
+    data: Option<String>,
 }
 
 fn encode(args: EncodeArgs) -> Result<()> {
@@ -168,9 +184,23 @@ fn encode(args: EncodeArgs) -> Result<()> {
         None => None,
     };
 
+    let data = if let Some(path) = &args.file {
+        let mut src: Box<dyn Read> = match path.as_str() {
+            "-" => Box::new(std::io::stdin()),
+            path => Box::new(File::open(path)?),
+        };
+        let mut data = Vec::new();
+        src.read_to_end(&mut data)?;
+        data
+    } else if let Some(data) = &args.data {
+        data.as_bytes().to_vec()
+    } else {
+        unreachable!()
+    };
+
     let code = match version {
-        Some(version) => QrCode::with_version(&args.data, version, args.level.0)?,
-        None => QrCode::with_error_correction_level(&args.data, args.level.0)?,
+        Some(version) => QrCode::with_version(&data, version, args.level.0)?,
+        None => QrCode::with_error_correction_level(&data, args.level.0)?,
     };
 
     let image = code
