@@ -1,14 +1,19 @@
 [package]
 name = "qr"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 description = "QR Code decoder / encoder"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "3.2.22", features = ["derive"] }
+clap = { version = "4.0.18", features = ["derive"] }
 encoding_rs = "0.8.31"
 image = "0.24.3"
 qrcode = "0.12.0"
 rqrr = "0.5.1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+strip = true

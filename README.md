@@ -4,56 +4,49 @@
 
 ```console
 $ qr --help
-qr 0.4.0
 QR Code decoder / encoder
 
-USAGE:
-    qr <SUBCOMMAND>
+Usage: qr <COMMAND>
 
-OPTIONS:
-    -h, --help       Print help information
-    -V, --version    Print version information
+Commands:
+  decode  Decodes QR Code from an image file
+  encode  Encodes QR Code from a string
+  help    Print this message or the help of the given subcommand(s)
 
-SUBCOMMANDS:
-    decode    Decodes QR Code from an image file
-    encode    Encodes QR Code from a string
-    help      Print this message or the help of the given subcommand(s)
+Options:
+  -h, --help     Print help information
+  -V, --version  Print version information
 ```
 
 ```console
 $ qr decode --help
-qr-decode
 Decodes QR Code from an image file
 
-USAGE:
-    qr decode [OPTIONS] <IMAGE>
+Usage: qr decode [OPTIONS] <IMAGE>
 
-ARGS:
-    <IMAGE>    Path to the image to decode
+Arguments:
+  <IMAGE>  Path to the image to decode
 
-OPTIONS:
-    -e, --encoding <ENCODING>    Character encoding to use [default: UTF-8]
-    -h, --help                   Print help information
+Options:
+  -e, --encoding <ENCODING>  Character encoding to use [default: UTF-8]
+  -h, --help                 Print help information
 ```
 
 ```console
 $ qr encode --help
-qr-encode
 Encodes QR Code from a string
 
-USAGE:
-    qr encode [OPTIONS] [DATA]
+Usage: qr encode [OPTIONS] [DATA]
 
-ARGS:
-    <DATA>    Data to be encoded
+Arguments:
+  [DATA]  Data to be encoded
 
-OPTIONS:
-    -f, --file <FILE>          Path to a file contains data to be encoded
-    -h, --help                 Print help information
-    -l, --level <LEVEL>        The error correction level. (L/M/Q/H) [default: L]
-    -m, --micro                Generates Micro QR Code. (requires --version)
-    -v, --version <VERSION>    The version of the generated image. (1 to 40 for normal, 1 to 4 for
-                               micro)
+Options:
+  -m, --micro              Generates Micro QR Code. (requires --version)
+  -v, --version <VERSION>  The version of the generated image. (1 to 40 for normal, 1 to 4 for micro)
+  -l, --level <LEVEL>      The error correction level. (L/M/Q/H) [default: L]
+  -f, --file <FILE>        Path to a file contains data to be encoded
+  -h, --help               Print help information
 ```
 
 ## Example
