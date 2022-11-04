@@ -74,7 +74,7 @@ impl From<qrcode::types::QrError> for Error {
 }
 
 #[derive(clap::Parser)]
-#[clap(about, version)]
+#[command(about, version)]
 enum Command {
     /// Decodes QR Code from an image file
     Decode(DecodeArgs),
@@ -101,7 +101,7 @@ fn main() -> ExitCode {
 #[derive(clap::Args)]
 struct DecodeArgs {
     /// Character encoding to use.
-    #[clap(short, long, default_value = "UTF-8")]
+    #[arg(short, long, default_value = "UTF-8")]
     encoding: String,
 
     /// Path to the image to decode.
@@ -135,6 +135,7 @@ fn decode(args: DecodeArgs) -> Result<()> {
     Ok(())
 }
 
+#[derive(Clone, Copy)]
 struct EcLevel(qrcode::EcLevel);
 
 impl std::str::FromStr for EcLevel {
@@ -154,23 +155,23 @@ impl std::str::FromStr for EcLevel {
 #[derive(clap::Args)]
 struct EncodeArgs {
     /// Generates Micro QR Code. (requires --version)
-    #[clap(short, long, requires = "version")]
+    #[arg(short, long, requires = "version")]
     micro: bool,
 
     /// The version of the generated image. (1 to 40 for normal, 1 to 4 for micro)
-    #[clap(short, long)]
+    #[arg(short, long)]
     version: Option<i16>,
 
     /// The error correction level. (L/M/Q/H)
-    #[clap(short, long, default_value = "L")]
+    #[arg(short, long, default_value = "L")]
     level: EcLevel,
 
     /// Path to a file contains data to be encoded.
-    #[clap(short, long, required_unless_present = "data")]
+    #[arg(short, long, required_unless_present = "data")]
     file: Option<String>,
 
     /// Data to be encoded.
-    #[clap(required_unless_present = "file")]
+    #[arg(required_unless_present = "file")]
     data: Option<String>,
 }
 
