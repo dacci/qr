@@ -14,8 +14,8 @@ Commands:
   help    Print this message or the help of the given subcommand(s)
 
 Options:
-  -h, --help     Print help information
-  -V, --version  Print version information
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 
 ```console
@@ -29,7 +29,7 @@ Arguments:
 
 Options:
   -e, --encoding <ENCODING>  Character encoding to use [default: UTF-8]
-  -h, --help                 Print help information
+  -h, --help                 Print help
 ```
 
 ```console
@@ -46,7 +46,7 @@ Options:
   -v, --version <VERSION>  The version of the generated image. (1 to 40 for normal, 1 to 4 for micro)
   -l, --level <LEVEL>      The error correction level. (L/M/Q/H) [default: L]
   -f, --file <FILE>        Path to a file contains data to be encoded
-  -h, --help               Print help information
+  -h, --help               Print help
 ```
 
 ## Example
