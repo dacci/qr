@@ -7,11 +7,11 @@ description = "QR Code decoder / encoder"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.4.6", features = ["derive"] }
-encoding_rs = "0.8.33"
-image = "0.24.7"
-qrcode = "0.12.0"
-rqrr = "0.6.0"
+clap = { version = "4.5.60", features = ["derive"] }
+encoding_rs = "0.8.35"
+image = "0.25.9"
+qrcode = "0.14.1"
+rqrr = "0.10.1"
 
 [profile.release]
 codegen-units = 1
